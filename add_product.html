@@ -1,0 +1,1827 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>إدارة المنتجات - إضافة/تعديل/حذف</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ======================================================= */
+        /* 1. التنسيق الأساسي                                     */
+        /* ======================================================= */
+        :root {
+            --light-bg: #f8f9fa; 
+            --light-primary: #007bff; 
+            --light-secondary: #ffffff; 
+            --light-text: #343a40; 
+            --light-card-shadow: 0 3px 10px rgba(0, 0, 0, 0.08);
+            --light-hover-bg: #e9ecef;
+            --light-danger: #dc3545;
+            --light-success: #28a745;
+            --light-warning: #ffc107;
+            --light-info: #17a2b8;
+            --font-sm: 13px;
+            --font-md: 15px;
+        }
+        /* التحديثات هنا لتصبح مطابقة لـ login.html */
+        .dark-mode {
+            --light-bg: #0D1117; /* خلفية GitHub */
+            --light-primary: #58A6FF; /* أزرق GitHub */
+            --light-secondary: #161B22; /* خلفية الصندوق */
+            --light-text: #C9D1D9; /* لون النص */
+            --light-card-shadow: 0 3px 10px rgba(0, 0, 0, 0.5); 
+            --light-hover-bg: #2B3035; 
+            --light-danger: #f85149; 
+            --light-success: #3fb950; 
+            --light-warning: #d29922;
+            --light-info: #4cbae6;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            transition: background-color 0.3s, color 0.3s;
+            direction: rtl;
+        }
+        .container { max-width: 1000px; margin: 20px auto; padding: 0 15px; }
+        h1 { margin-bottom: 20px; color: var(--light-primary); font-size: 24px; }
+        h2 { margin-top: 30px; margin-bottom: 15px; font-size: 20px; border-bottom: 2px solid var(--light-hover-bg); padding-bottom: 5px; }
+        
+        .btn {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: var(--font-sm);
+            transition: background-color 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .btn-sm {
+             padding: 6px 10px;
+             font-size: 12px;
+        }
+        .btn-primary { background-color: var(--light-primary); color: var(--light-secondary); }
+        .btn-primary:hover { background-color: #0056b3; }
+        .btn-danger { background-color: var(--light-danger); color: var(--light-secondary); }
+        .btn-danger:hover { background-color: #c82333; }
+        .btn-success { background-color: var(--light-success); color: var(--light-secondary); }
+        .btn-success:hover { background-color: #1e7e34; }
+        .btn-info { background-color: var(--light-info); color: var(--light-secondary); } 
+        .btn-info:hover { background-color: #138496; }
+
+        /* ======================================================= */
+        /* 2. تنظيم نموذج الإضافة/التعديل (الشبكة)                 */
+        /* ======================================================= */
+        #product-form {
+            background-color: var(--light-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--light-card-shadow);
+            margin-bottom: 30px;
+            display: grid;
+            gap: 20px; 
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        }
+        .form-group { display: flex; flex-direction: column; }
+        .form-group.full-width { grid-column: 1 / -1; }
+        label { margin-bottom: 5px; font-size: var(--font-sm); font-weight: bold; }
+        input, select, textarea {
+            padding: 10px;
+            border: 1px solid var(--light-hover-bg);
+            border-radius: 4px;
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            font-size: var(--font-md);
+        }
+        .dark-mode input, .dark-mode select, .dark-mode textarea {
+            background-color: #2b3035;
+            border-color: #3b4249;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            border-color: var(--light-hover-bg); 
+            outline: none; 
+            box-shadow: none; 
+        }
+
+        /* ======================================================= */
+        /* 3. تنسيق قائمة المنتجات                               */
+        /* ======================================================= */
+        #product-list { display: grid; gap: 10px; grid-template-columns: 1fr; }
+        .product-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background-color: var(--light-secondary);
+            padding: 10px 15px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+        .product-item .actions { display: flex; gap: 10px; }
+        .item-details { flex-grow: 1; display: flex; align-items: center; flex-wrap: wrap; gap: 10px; } 
+
+        .product-item .price-details {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 2px;
+            margin-right: 15px;
+            min-width: 100px;
+        }
+        .product-item .original-price {
+            text-decoration: line-through;
+            color: #a0a0a0;
+            font-size: var(--font-sm);
+        }
+        .product-item .discounted-price {
+            color: var(--light-danger); 
+            font-weight: bold;
+            font-size: var(--font-md);
+        }
+        .discount-badge {
+            background-color: var(--light-danger); 
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: bold;
+            display: inline-block;
+            margin-left: 5px;
+        }
+        .dark-mode .discount-badge {
+            background-color: var(--light-danger);
+        }
+        /* ------------------------------------------- */
+
+
+        /* ======================================================= */
+        /* 4. إخفاء المحتوى قبل التحقق من الدخول/وضع القفل       */
+        /* ======================================================= */
+        .hidden-content { display: none !important; }
+        .auth-check-message { text-align: center; padding: 50px; color: var(--light-primary); }
+        
+        .is-locked {
+            opacity: 0.5; 
+            pointer-events: none; 
+            filter: blur(2px); 
+        }
+
+        /* ======================================================= */
+        /* 5. تنسيق مدخلات الصورة (للتنظيم)                       */
+        /* ======================================================= */
+        .image-mode-switch { 
+            display: flex; 
+            gap: 10px; 
+            margin-bottom: 10px; 
+        }
+        .image-mode-switch .btn {
+            flex-grow: 1;
+            padding: 8px;
+            font-size: var(--font-sm);
+        }
+        
+        /* ======================================================= */
+        /* 6. تنسيق الإشعارات العائمة (Notification)              */
+        /* ======================================================= */
+        #notification-container {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            z-index: 10000;
+            max-width: 350px;
+        }
+        .notification-item {
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            opacity: 0;
+            transform: translateX(100%);
+            transition: all 0.5s ease-in-out;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-weight: bold;
+            direction: rtl;
+            cursor: pointer; /* 🛑 للمسة جديدة */
+        }
+        .notification-item.show {
+            opacity: 1;
+            transform: translateX(0);
+        }
+        .notification-success { background-color: var(--light-success); color: white; }
+        .notification-error { background-color: var(--light-danger); color: white; }
+        .notification-warning { background-color: var(--light-warning); color: var(--light-text); }
+        .notification-info { background-color: var(--light-info); color: white; }
+        .notification-item i { font-size: 18px; }
+        
+        /* ======================================================= */
+        /* 7. تنسيق شاشة التحذير الجديدة (Inactivity)              */
+        /* ======================================================= */
+        #inactivity-warning {
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+            background-color: rgba(0, 0, 0, 0.7); 
+            z-index: 9999; 
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            text-align: center;
+            transition: all 0.3s;
+        }
+        
+        #inactivity-warning > div {
+            padding: 30px; 
+            border-radius: 10px; 
+            box-shadow: 0 0 20px rgba(255, 0, 0, 0.5); 
+            max-width: 450px; 
+            width: 90%;
+            background-color: var(--light-secondary); 
+            color: var(--light-text);
+        }
+
+
+        @media (max-width: 768px) {
+            #product-form { grid-template-columns: 1fr; }
+            .product-item { flex-wrap: wrap; }
+            .item-details { width: 100%; margin-bottom: 10px; }
+            .product-item .actions { width: 100%; justify-content: flex-end; }
+            #notification-container {
+                left: 15px;
+                max-width: 90%;
+            }
+        }
+
+        /* تنسيق شاشة التأكيد الخاصة بالاستعادة */
+        #backup-confirmation-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10001;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #backup-confirmation-modal > div {
+            background-color: var(--light-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--light-card-shadow);
+            width: 350px;
+            text-align: center;
+            color: var(--light-text);
+        }
+        #backup-confirmation-modal h3 {
+            margin-top: 0;
+            color: var(--light-warning);
+        }
+        #backup-confirmation-modal button {
+            margin: 10px 5px 0;
+        }
+        
+        /* 🛑 تنسيق شاشة تأكيد الخروج (Simplified Logout Prompt) */
+        #logout-confirmation-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10003;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #logout-confirmation-modal > div {
+            background-color: var(--light-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--light-card-shadow);
+            width: 350px;
+            text-align: center;
+            color: var(--light-text);
+        }
+        #logout-confirmation-modal button {
+            margin: 10px 5px 0;
+        }
+
+
+        /* تنسيق شاشة رمز التأكيد */
+        #pin-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            z-index: 10002; 
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #pin-modal > div {
+            background-color: var(--light-secondary);
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0, 123, 255, 0.3);
+            width: 300px;
+            text-align: center;
+            color: var(--light-text);
+        }
+        #pin-modal input {
+            width: 100%;
+            margin-bottom: 15px;
+            text-align: center;
+            letter-spacing: 5px;
+            font-weight: bold;
+        }
+        
+        /* 🛑 تنسيق شاشة تأكيد النسخة الاحتياطية الجديدة */
+        #backup-prompt-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10004;
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #backup-prompt-modal > div {
+            background-color: var(--light-secondary);
+            padding: 25px;
+            border-radius: 8px;
+            box-shadow: var(--light-card-shadow);
+            width: 350px;
+            text-align: center;
+            color: var(--light-text);
+        }
+        #backup-prompt-modal button {
+            margin: 10px 5px 0;
+        }
+        
+        /* 🛑 تنسيق شاشة تأكيد الحذف (New Delete Confirmation) */
+        #delete-confirmation-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background-color: rgba(0, 0, 0, 0.6);
+            z-index: 10005; /* higher than other modals */
+            display: none;
+            justify-content: center;
+            align-items: center;
+        }
+        #delete-confirmation-modal > div {
+            background-color: var(--light-secondary);
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 0 20px rgba(220, 53, 69, 0.4); /* Danger color shadow */
+            width: 380px;
+            text-align: center;
+            color: var(--light-text);
+        }
+        #delete-confirmation-modal h3 {
+            color: var(--light-danger);
+            margin-bottom: 10px;
+        }
+        #delete-confirmation-modal p {
+            margin-bottom: 20px;
+            font-size: var(--font-md);
+        }
+        #delete-confirmation-modal button {
+            margin: 10px 5px 0;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div id="notification-container"></div>
+    
+    <div id="backup-confirmation-modal">
+        <div>
+            <i class="fas fa-question-circle" style="font-size: 30px; color: var(--light-warning); margin-bottom: 10px;"></i>
+            <h3 id="confirmation-title">تحديث النسخة الاحتياطية</h3>
+            <p id="confirmation-message">هل تريد تحديث نسخة المنتجات المحفوظة في المتصفح حالياً (${currentCount}) بالمنتجات التي تم استعادتها (${newCount})؟ سيتم التحديث تلقائياً بعد 10 ثوانٍ.</p>
+            <button class="btn btn-success" id="confirm-backup-yes"><i class="fas fa-check"></i> نعم، قم بالتحديث الآن</button>
+            <button class="btn btn-danger" id="confirm-backup-no"><i class="fas fa-times"></i> لا، أبقِ النسخة الحالية</button>
+            <small id="countdown-backup-message" style="display: block; margin-top: 10px; color: var(--light-info);"></small>
+        </div>
+    </div>
+    
+    <div id="logout-confirmation-modal" style="display: none;">
+        <div>
+            <i class="fas fa-sign-out-alt" style="font-size: 30px; color: var(--light-danger); margin-bottom: 10px;"></i>
+            <h3>تأكيد تسجيل الخروج</h3>
+            <p style="font-size: var(--font-sm); margin-bottom: 20px;">هل أنت متأكد من تسجيل الخروج؟</p>
+            <button class="btn btn-danger" id="confirm-logout-direct" style="margin-right: 5px;"><i class="fas fa-sign-out-alt"></i> تسجيل الخروج</button>
+            <button class="btn btn-info" id="confirm-logout-cancel"><i class="fas fa-times"></i> إلغاء</button>
+        </div>
+    </div>
+
+    <div id="pin-modal">
+        <div>
+            <i class="fas fa-lock" style="font-size: 30px; color: var(--light-primary); margin-bottom: 15px;"></i>
+            <h3>رمز التأكيد مطلوب</h3>
+            <p id="pin-message" style="font-size: var(--font-sm); margin-bottom: 10px;">الرجاء إدخال رمز تأكيد الإدارة للمتابعة.</p>
+            <input type="password" id="pin-input" maxlength="6" placeholder="******">
+            <button class="btn btn-primary" id="pin-submit-btn"><i class="fas fa-sign-in-alt"></i> تأكيد</button>
+        </div>
+    </div>
+    
+    <div id="backup-prompt-modal" style="display: none;">
+        <div>
+            <i class="fas fa-question-circle" style="font-size: 30px; color: var(--light-info); margin-bottom: 10px;"></i>
+            <h3>هل تريد تنزيل نسخة احتياطية (JSON)؟</h3>
+            <p id="prompt-message" style="font-size: var(--font-sm); margin-bottom: 20px;">
+                تم حفظ التغييرات في المتصفح بنجاح. يرجى تنزيل نسخة احتياطية الآن لحفظ التغييرات في ملف خارجي.
+            </p>
+            <button class="btn btn-success" id="confirm-backup-prompt-yes" style="margin-right: 5px;"><i class="fas fa-cloud-download-alt"></i> نعم، قم بالتنزيل الآن</button>
+            <button class="btn btn-info" id="confirm-backup-prompt-no"><i class="fas fa-times"></i> لا، شكراً</button>
+        </div>
+    </div>
+    
+    <div id="delete-confirmation-modal" style="display: none;">
+        <div>
+            <i class="fas fa-trash-alt" style="font-size: 40px; color: var(--light-danger); margin-bottom: 15px;"></i>
+            <h3>تأكيد حذف المنتج</h3>
+            <p id="delete-confirmation-message">هل أنت متأكد من حذف المنتج "<strong id="product-name-to-delete"></strong>" نهائياً؟ لا يمكن التراجع عن هذا الإجراء.</p>
+            <button class="btn btn-danger" id="confirm-delete-yes"><i class="fas fa-trash"></i> نعم، تأكيد الحذف</button>
+            <button class="btn btn-info" id="confirm-delete-no"><i class="fas fa-times"></i> إلغاء</button>
+        </div>
+    </div>
+
+
+    <div id="auth-message" class="auth-check-message">
+        <p>الرجاء الانتظار، جاري التحقق من حالة تسجيل الدخول...</p>
+    </div>
+    
+    <div id="admin-content" class="hidden-content">
+        <div class="container">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <a href="products.html" style="text-decoration: none; color: var(--light-primary); font-size: var(--font-md);"><i class="fas fa-arrow-right"></i> العودة للمتجر</a>
+                <div>
+                    <button class="btn btn-danger" onclick="logout()"><i class="fas fa-sign-out-alt"></i> تسجيل خروج</button>
+                    <button class="btn" id="mode-toggle" style="background: transparent; color: var(--light-text); border: 1px solid var(--light-hover-bg);"><i class="fas fa-moon"></i> الوضع</button>
+                </div>
+            </div>
+            
+            <h1 id="page-title">إضافة منتج جديد 🛒</h1>
+
+            <form id="product-form">
+                <input type="hidden" id="product-id-to-edit">
+                
+                <div class="form-group"> <label for="product-name">اسم المنتج:</label> <input type="text" id="product-name" required> </div>
+                <div class="form-group"> <label for="product-price">السعر الأصلي:</label> <input type="number" id="product-price" required min="0.01" step="0.01"> </div>
+                
+                <div class="form-group"> 
+                    <label>إعداد الخصم:</label>
+                    <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                        <button type="button" class="btn btn-sm btn-primary" id="discount-mode-percent" data-mode="percent"><i class="fas fa-percent"></i> نسبة الخصم (%)</button>
+                        <button type="button" class="btn btn-sm" id="discount-mode-price" data-mode="price-after"><i class="fas fa-tag"></i> السعر بعد الخصم</button>
+                    </div>
+                    
+                    <div id="discount-percent-group">
+                        <label for="product-discount-percent" style="font-size: var(--font-sm); font-weight: normal;">نسبة الخصم (%):</label> 
+                        <input type="number" id="product-discount-percent" value="0" min="0" max="100" step="0.01" placeholder="نسبة مئوية (مثل 10.5)" oninput="if(this.value.length > 4) this.value = this.value.slice(0, 4); handleDiscountChange(this, 'percent');"> 
+                    </div>
+
+                    <div id="discount-price-group" style="display:none;">
+                        <label for="product-discount-price" style="font-size: var(--font-sm); font-weight: normal;">السعر بعد الخصم:</label> 
+                        <input type="number" id="product-discount-price" value="" min="0.01" step="0.01" placeholder="قيمة السعر الجديدة" oninput="handleDiscountChange(this, 'price-after');"> 
+                    </div>
+                    <small id="discount-auto-calc-message" style="color: var(--light-info); font-size: 11px; margin-top: 5px; text-align: right;"></small>
+                </div> 
+
+                
+                <div class="form-group"> <label for="product-currency">العملة:</label>
+                    <select id="product-currency" required>
+                        <option value="YER">ريال يمني (YER)</option>
+                        <option value="SAR">ريال سعودي (SAR)</option>
+                        <option value="USD">دولار أمريكي (USD)</option>
+                    </select>
+                </div>
+                <div class="form-group"> <label for="product-type">الفئة:</label>
+                    <select id="product-type" required>
+                        <option value="الكترونيات">إلكترونيات</option>
+                        <option value="أزياء وملابس">أزياء وملابس</option>
+                        <option value="أدوات منزلية">أدوات منزلية</option>
+                        <option value="أغذية ومشروبات">أغذية ومشروبات</option>
+                        <option value="خدمات">خدمات</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                </div>
+
+                <div class="form-group full-width" style="border-top: 1px solid var(--light-hover-bg); padding-top: 15px;">
+                    <label>مصدر صورة المنتج:</label>
+                    <div class="image-mode-switch">
+                        <button type="button" class="btn btn-primary" id="url-mode-btn" data-mode="url"><i class="fas fa-link"></i> رابط خارجي (URL)</button>
+                        <button type="button" class="btn" id="file-mode-btn" data-mode="file"><i class="fas fa-upload"></i> تحميل من الجهاز</button>
+                    </div>
+                    <input type="url" id="product-image-url" placeholder="الصق رابط الصورة هنا (HTTPS://...)" required>
+                    <input type="file" id="product-image-file" accept="image/*" style="display:none;">
+                    <small id="image-help-text" style="color:#6c757d; font-size: 11px; margin-top: 5px; text-align: right;">(ملاحظة: رفع الصورة مباشرة يزيد من حجم البيانات المحفوظة في المتصفح)</small>
+                </div>
+                
+                <div class="form-group full-width"> 
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px;">
+                        <label for="product-description" style="margin-bottom: 0;">كلمات مفتاحية للبحث:</label> 
+                        </div>
+                    <small style="color:#6c757d; font-size: 11px; margin-top: 5px; text-align: right;">(يتم استخدام هذه الكلمات في البحث. يتم توليدها تلقائياً عند تغيير الاسم أو الفئة أو السعر.)</small>
+                    <textarea id="product-description" placeholder="هاتف ذكي، سماعة بلوتوث، أسود، 256 جيجا..."></textarea> 
+                </div>
+                <div class="form-group full-width" style="margin-top: 10px;">
+                    <button type="submit" class="btn btn-primary" id="save-button"><i class="fas fa-save"></i> حفظ المنتج الجديد</button>
+                    <button type="button" class="btn btn-danger" id="cancel-edit-button" style="display:none; margin-right: 10px;"><i class="fas fa-times"></i> إلغاء التعديل</button>
+                </div>
+            </form>
+
+            <h2>المنتجات الحالية المحفوظة</h2>
+            
+            <div class="form-group full-width" style="margin-bottom: 20px; border: 1px dashed var(--light-hover-bg); padding: 15px; border-radius: 8px;">
+                <label style="font-size: var(--font-md); color: var(--light-primary); margin-bottom: 10px;"><i class="fas fa-database"></i> إدارة النسخ الاحتياطي للمنتجات:</label>
+                <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+                    <button type="button" class="btn btn-success" onclick="requestPin('download')" style="flex-grow: 1;"><i class="fas fa-cloud-download-alt"></i> تنزيل نسخة احتياطية يدوياً (JSON)</button>
+                    
+                    <button type="button" class="btn btn-info" onclick="requestPin('restore')" style="flex-grow: 1;"><i class="fas fa-cloud-upload-alt"></i> استعادة من ملف (JSON)</button>
+                    
+                    <input type="file" id="backup-file-input" accept=".json" style="display: none;" onchange="handleRestoreFile(event)">
+                </div>
+            </div>
+            <div class="form-group full-width" style="margin-bottom: 20px;">
+                <label for="product-search"><i class="fas fa-search"></i> ابحث عن منتج (20 حرف كحد أقصى):</label>
+                <input type="text" id="product-search" placeholder="أدخل اسم المنتج أو جزءاً منه للبحث..." maxlength="20">
+            </div>
+            <div id="product-list">
+                </div>
+        </div>
+    </div>
+    
+    <div id="inactivity-warning" style="display: none;">
+        <div>
+            <i class="fas fa-clock" style="font-size: 40px; color: var(--light-danger); margin-bottom: 15px;"></i>
+            <h3 style="color: var(--light-danger); margin-bottom: 10px;">تحذير: وشك انتهاء الجلسة!</h3>
+            <p id="countdown-message" style="color: var(--light-text); font-size: 18px; font-weight: bold;">سيتم إغلاق الموقع خلال 60 ثانية.</p>
+            <p style="color: #6c757d; font-size: 14px; margin-top: 15px;">الرجاء تحريك مؤشر الفأرة أو الضغط على أي مفتاح للاستمرار.</p>
+        </div>
+    </div>
+
+
+    <script>
+        // =======================================================
+        //                 الإعدادات السرية
+        // =======================================================
+        const ENCRYPTION_KEY = "YourSecretKey-12345"; 
+        const ADMIN_PIN = "123456"; // 🛑 رمز التأكيد (PIN) الافتراضي
+        
+        // إعدادات مؤقت الجلسة: 5 دقائق إجمالية
+        const TOTAL_SESSION_TIME_MS = 5 * 60 * 1000; // 5 دقائق 
+        const WARNING_TIME_MS = 60 * 1000;          // تحذير قبل 60 ثانية من النهاية
+        const INACTIVITY_LIMIT_MS = TOTAL_SESSION_TIME_MS - WARNING_TIME_MS; // 4 دقائق قبل ظهور التحذير
+
+        // متغير مؤقت لتخزين الإجراء المطلوب بعد إدخال الـ PIN
+        let pendingActionData = null; // 🛑 متغير عالمي لتخزين بيانات الإجراء المعلق (مثل بيانات المنتج أو معرف الحذف)
+        
+        // =======================================================
+        //                   وظيفة عرض الإشعارات المنسقة (بديل لـ alert)
+        // =======================================================
+        
+        // 🛑 متغير عالمي لمتابعة الإشعار الحالي
+        let currentNotificationItem = null; 
+
+        function showNotification(message, type = 'info', duration = 4000) {
+            const container = document.getElementById('notification-container');
+            
+            // 🛑 1. إزالة الإشعار الحالي إذا كان موجوداً
+            if (currentNotificationItem) {
+                // إجبار الإشعار الحالي على الاختفاء الفوري وإزالته
+                currentNotificationItem.classList.remove('show');
+                clearTimeout(currentNotificationItem.timer);
+                currentNotificationItem.remove(); 
+                currentNotificationItem = null;
+            }
+
+            const item = document.createElement('div');
+            
+            let icon = '';
+            let className = '';
+
+            switch (type) {
+                case 'success':
+                    icon = 'fas fa-check-circle';
+                    className = 'notification-success';
+                    break;
+                case 'error':
+                    icon = 'fas fa-times-circle';
+                    className = 'notification-error';
+                    break;
+                case 'warning':
+                    icon = 'fas fa-exclamation-triangle';
+                    className = 'notification-warning';
+                    break;
+                case 'info':
+                default:
+                    icon = 'fas fa-info-circle';
+                    className = 'notification-info'; 
+                    break;
+            }
+
+            item.className = `notification-item ${className}`;
+            item.innerHTML = `<i class="${icon}"></i> <span>${message}</span>`;
+            
+            container.appendChild(item);
+            currentNotificationItem = item; // 🛑 تعيين الإشعار الجديد كإشعار حالي
+
+            setTimeout(() => { item.classList.add('show'); }, 10);
+            
+            // 🛑 إضافة مستمع لإخفاء الإشعار عند الضغط عليه
+            item.addEventListener('click', () => {
+                item.classList.remove('show');
+                clearTimeout(item.timer);
+                // التأكد من أن هذا الإشعار هو الإشعار الحالي قبل إزالته وتعيين null
+                if (currentNotificationItem === item) {
+                    item.remove();
+                    currentNotificationItem = null;
+                }
+            });
+
+            // مؤقت الإخفاء التلقائي
+            item.timer = setTimeout(() => {
+                item.classList.remove('show');
+                item.addEventListener('transitionend', () => {
+                    // 🛑 التأكد من أن هذا الإشعار هو الإشعار الحالي قبل إزالته وتعيين null
+                    if (currentNotificationItem === item) {
+                        item.remove();
+                        currentNotificationItem = null;
+                    }
+                });
+            }, duration);
+        }
+        
+        // 🛑 دالة عرض شاشة تأكيد النسخة الاحتياطية
+        function showBackupPrompt(isDelete = false) {
+            const modal = document.getElementById('backup-prompt-modal');
+            const message = document.getElementById('prompt-message');
+            
+            if (!modal) return;
+            
+            if (isDelete) {
+                message.innerHTML = 'تم حذف المنتج من المتصفح بنجاح. هل تريد تنزيل نسخة احتياطية جديدة الآن لتوثيق هذا الحذف؟';
+            } else {
+                message.innerHTML = 'تم حفظ التغييرات في المتصفح بنجاح. هل تريد تنزيل نسخة احتياطية جديدة الآن لحفظ التغييرات في ملف خارجي؟';
+            }
+
+            modal.style.display = 'flex';
+            
+            // إعداد الأزرار
+            document.getElementById('confirm-backup-prompt-yes').onclick = () => finalizeBackupPrompt(true);
+            document.getElementById('confirm-backup-prompt-no').onclick = () => finalizeBackupPrompt(false);
+        }
+
+        function finalizeBackupPrompt(shouldBackup) {
+            const modal = document.getElementById('backup-prompt-modal');
+            if (modal) modal.style.display = 'none';
+
+            if (shouldBackup) {
+                downloadBackupFile();
+            } else {
+                // 🛑 تم حذف إشعار الإلغاء كما طلب المستخدم
+            }
+        }
+
+
+        // =======================================================
+        //                   وظائف رمز التأكيد (PIN) - محصور بالتنزيل/الاستعادة/التعديل/الحذف
+        // =======================================================
+        
+        /**
+         * طلب رمز التأكيد
+         * @param {string} actionType - نوع الإجراء (download, restore, edit, delete)
+         * @param {any} actionData - بيانات الإجراء (مثل بيانات المنتج أو معرف الحذف)
+         */
+        window.requestPin = function(actionType, actionData = null) {
+            // 🛑 حفظ نوع الإجراء وبياناته
+            pendingActionData = { type: actionType, data: actionData };
+            
+            const pinModal = document.getElementById('pin-modal');
+            const pinInput = document.getElementById('pin-input');
+            const pinSubmitBtn = document.getElementById('pin-submit-btn');
+
+            if (pinModal) pinModal.style.display = 'flex';
+            if (pinInput) {
+                pinInput.value = '';
+                pinInput.focus();
+                
+                if(actionType === 'delete') {
+                    document.getElementById('pin-message').textContent = 'الرجاء إدخال رمز تأكيد الإدارة لحذف المنتج.';
+                } else if(actionType === 'edit') {
+                    document.getElementById('pin-message').textContent = 'الرجاء إدخال رمز تأكيد الإدارة لحفظ التعديلات.';
+                } else {
+                     document.getElementById('pin-message').textContent = 'الرجاء إدخال رمز تأكيد الإدارة للمتابعة.';
+                }
+            }
+
+            // إزالة المستمعين القدامى وتعيين مستمع جديد لتجنب التكرار
+            pinSubmitBtn.onclick = null; 
+            pinSubmitBtn.onclick = handlePinSubmission;
+            
+            // تفعيل الإرسال بالضغط على Enter
+            pinInput.onkeypress = function(e) {
+                if (e.key === 'Enter') {
+                    handlePinSubmission();
+                }
+            };
+        }
+
+        function handlePinSubmission() {
+            const pinInput = document.getElementById('pin-input');
+            const enteredPin = pinInput.value.trim();
+            const pinModal = document.getElementById('pin-modal');
+
+            if (enteredPin === ADMIN_PIN) {
+                if (pinModal) pinModal.style.display = 'none';
+                
+                const actionType = pendingActionData ? pendingActionData.type : null;
+                const data = pendingActionData ? pendingActionData.data : null; // بيانات المنتج أو ID
+
+                // تنفيذ الإجراء المعلق بناءً على النوع
+                if (actionType === 'download') {
+                    downloadBackupFile();
+                } else if (actionType === 'restore') {
+                    document.getElementById('backup-file-input').click();
+                } else if (actionType === 'edit') { // 🛑 تعديل منتج
+                    if (data) {
+                        performSave(data); // data is the complete productData
+                        showNotification('✅ تم حفظ التعديلات بعد التحقق من رمز التأكيد.', 'success', 4000);
+                    } else {
+                        showNotification('❌ خطأ: لم يتم العثور على بيانات المنتج للتعديل.', 'error', 4000);
+                    }
+                } else if (actionType === 'delete') { // 🛑 حذف منتج
+                    if (data) {
+                        // 🛑 استبدال الحذف المباشر بطلب التأكيد الجميل
+                        showDeleteConfirmation(data); 
+                    } else {
+                        showNotification('❌ خطأ: لم يتم العثور على معرف المنتج للحذف.', 'error', 4000);
+                    }
+                }
+                
+                pendingActionData = null; // إعادة تعيين البيانات
+            } else {
+                showNotification('❌ رمز التأكيد غير صحيح.', 'error', 3000);
+                pinInput.value = '';
+                pinInput.focus();
+            }
+        }
+        
+        // 🛑 دالة عرض شاشة تأكيد الحذف الجميلة بعد إدخال الـ PIN
+        function showDeleteConfirmation(productId) {
+            const product = getProductById(productId);
+            const modal = document.getElementById('delete-confirmation-modal');
+            const productNameElement = document.getElementById('product-name-to-delete');
+            
+            if (!modal || !product) {
+                showNotification('خطأ: لا يمكن عرض تأكيد الحذف. المنتج غير موجود.', 'error', 4000);
+                return;
+            }
+
+            productNameElement.textContent = product.name;
+            modal.style.display = 'flex';
+            
+            // إعداد الأزرار لتنفيذ الإجراء النهائي أو الإلغاء
+            document.getElementById('confirm-delete-yes').onclick = () => {
+                modal.style.display = 'none';
+                performDeletion(productId); // الانتقال للحذف الفعلي
+            };
+            
+            document.getElementById('confirm-delete-no').onclick = () => {
+                modal.style.display = 'none';
+                showNotification('تم إلغاء عملية الحذف.', 'info', 3000);
+            };
+        }
+
+
+        // =======================================================
+        //                   وظائف النسخ الاحتياطي والاستعادة
+        // =======================================================
+
+        /**
+         * وظيفة إنشاء وتنزيل ملف النسخة الاحتياطية (JSON) المشفر
+         */
+        window.downloadBackupFile = function() {
+            const productsData = localStorage.getItem('productsEncrypted');
+            if (!productsData || productsData === '[]') {
+                showNotification('لا توجد منتجات حالياً لإنشاء نسخة احتياطية.', 'warning');
+                return false; // فشل التنزيل
+            }
+            
+            const productsArray = JSON.parse(productsData);
+
+            // 1. تحويل البيانات (المشفرة) إلى نص JSON مع تنسيق جميل
+            const productsJson = JSON.stringify(productsArray, null, 2); 
+            
+            // 2. إنشاء كائن Blob من النص
+            const blob = new Blob([productsJson], { type: 'application/json' });
+            
+            // 3. إنشاء رابط تنزيل وإجراء النقر التلقائي
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            
+            // تحديد اسم الملف بطابع زمني
+            const date = new Date().toISOString().slice(0, 10); // YYYY-MM-DD
+            a.download = `products_backup_${date}.json`;
+            a.href = url;
+            
+            // 🛑 تحسين إشعار التنزيل
+            let downloadSuccess = false;
+            a.addEventListener('click', () => {
+                downloadSuccess = true;
+            });
+
+            document.body.appendChild(a);
+            a.click();
+            
+            // تنظيف العناصر بعد التنزيل
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            // إظهار الإشعار بناءً على محاولة التنزيل
+            setTimeout(() => {
+                if (downloadSuccess) {
+                    showNotification(`✅ تم تنزيل نسخة احتياطية لـ ${productsArray.length} منتج مشفر.`, 'success', 5000);
+                } else {
+                    showNotification('❌ فشل تنزيل الملف تلقائياً. يرجى تجربة متصفح آخر أو التحقق من الإعدادات.', 'error', 7000);
+                }
+            }, 100);
+            
+            return true; // نجاح محاولة التنزيل
+        }
+
+        /**
+         * وظيفة معالجة ملف الاستعادة المرفوع (دمج المنتجات وتجنب التكرار)
+         */
+        window.handleRestoreFile = function(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            if (file.type !== 'application/json') {
+                showNotification('الرجاء اختيار ملف بصيغة JSON صحيح.', 'error');
+                event.target.value = ''; // Reset input
+                return;
+            }
+            
+            const reader = new FileReader();
+            
+            reader.onload = function(e) {
+                try {
+                    const content = e.target.result;
+                    const productsToRestore = JSON.parse(content);
+                    const currentProductsRaw = loadProductsRaw();
+
+                    if (!Array.isArray(productsToRestore) || productsToRestore.some(p => !p.id || !p.data)) {
+                         showNotification('محتوى الملف غير صالح. يجب أن يحتوي على مصفوفة بيانات منتجات مشفرة سليمة.', 'error', 6000);
+                         return;
+                    }
+
+                    // 🛑 دمج المنتجات: يتم دمج المنتجات المستعادة مع المنتجات الحالية.
+                    let addedCount = 0;
+                    let updatedCount = 0;
+                    
+                    productsToRestore.forEach(restoredProduct => {
+                        const index = currentProductsRaw.findIndex(p => p.id === restoredProduct.id);
+                        if (index !== -1) {
+                            // المنتج موجود، يتم تحديثه
+                            currentProductsRaw[index].data = restoredProduct.data;
+                            updatedCount++;
+                        } else {
+                            // المنتج غير موجود، يتم إضافته
+                            currentProductsRaw.push(restoredProduct);
+                            addedCount++;
+                        }
+                    });
+
+                    // حفظ البيانات الجديدة المدمجة
+                    localStorage.setItem('productsEncrypted', JSON.stringify(currentProductsRaw));
+                    
+                    showNotification(`✅ تم دمج المنتجات بنجاح. أضيف: ${addedCount}، حدث: ${updatedCount}. إجمالي المنتجات: ${currentProductsRaw.length}.`, 'success', 8000);
+                    
+                    // إعادة رسم قائمة المنتجات بعد الاستعادة
+                    renderProductList(document.getElementById('product-search').value);
+                    
+                    // طلب تأكيد تحديث النسخة الاحتياطية (للتنزيل اليدوي)
+                    if (productsToRestore.length > currentProductsRaw.length - addedCount) {
+                        showBackupConfirmation(currentProductsRaw.length, productsToRestore.length, addedCount, updatedCount);
+                    }
+
+
+                } catch (error) {
+                    showNotification('❌ خطأ في قراءة أو تحليل ملف النسخة الاحتياطية. تأكد أنه ملف JSON سليم.', 'error', 6000);
+                    console.error('Restore Error:', error);
+                } finally {
+                    // إفراغ قيمة المدخل للسماح باختيار نفس الملف مرة أخرى
+                    event.target.value = ''; 
+                }
+            };
+            
+            reader.onerror = function() {
+                showNotification('❌ تعذر قراءة الملف.', 'error');
+            };
+
+            reader.readAsText(file);
+        }
+        
+        // شاشة تأكيد تحديث النسخة الاحتياطية (عند الاستعادة)
+        let countdownBackupTimer;
+
+        function showBackupConfirmation(newTotalCount, restoredCount, addedCount, updatedCount) {
+            const modal = document.getElementById('backup-confirmation-modal');
+            const message = document.getElementById('confirmation-message');
+            const countdownMsg = document.getElementById('countdown-backup-message');
+            const btnYes = document.getElementById('confirm-backup-yes');
+            const btnNo = document.getElementById('confirm-backup-no');
+            
+            if (!modal) return;
+            
+            message.innerHTML = `تم استعادة ${restoredCount} منتج (أضيف: ${addedCount}، حدث: ${updatedCount}). هل تريد إنشاء نسخة احتياطية جديدة لهذا الدمج في المتصفح (${newTotalCount} منتج)؟ سيتم إنشاء نسخة احتياطية **تلقائياً** بعد 10 ثوانٍ.`;
+            modal.style.display = 'flex';
+
+            let timeLeft = 10;
+            
+            // إيقاف أي مؤقت سابق
+            if (countdownBackupTimer) clearTimeout(countdownBackupTimer);
+
+            function updateCountdown() {
+                countdownMsg.textContent = `التنفيذ التلقائي خلال: ${timeLeft} ثوانٍ...`;
+                if (timeLeft <= 0) {
+                    finalizeBackupConfirmation(true); // نعم، تحديث تلقائي
+                } else {
+                    timeLeft--;
+                    countdownBackupTimer = setTimeout(updateCountdown, 1000);
+                }
+            }
+            
+            updateCountdown();
+            
+            // إعداد أزرار التأكيد
+            btnYes.onclick = () => finalizeBackupConfirmation(true);
+            btnNo.onclick = () => finalizeBackupConfirmation(false);
+        }
+
+        function finalizeBackupConfirmation(shouldBackup) {
+            const modal = document.getElementById('backup-confirmation-modal');
+            clearTimeout(countdownBackupTimer);
+            if (modal) modal.style.display = 'none';
+
+            if (shouldBackup) {
+                // إعادة استخدام دالة التنزيل لتحفيز المستخدم على حفظ النسخة المدموجة
+                downloadBackupFile();
+            } else {
+                showNotification('تم إلغاء تحديث النسخة الاحتياطية في ملف (JSON).', 'info', 3000);
+            }
+        }
+
+
+        // =======================================================
+        //                   مؤقت الخروج التلقائي الأمني
+        // =======================================================
+        let inactivityTimer; 
+        let countdownTimer;  
+
+        // هذه الدالة تعيد المؤقت لصفر عند أي نشاط
+        function resetTimer() {
+            clearTimeout(inactivityTimer);
+            clearTimeout(countdownTimer);
+            
+            const warningDiv = document.getElementById('inactivity-warning');
+            if(warningDiv) warningDiv.style.display = 'none'; 
+            
+            startInactivityTimer();
+        }
+
+        // هذه الدالة تبدأ المؤقت الذي يؤدي لظهور شاشة التحذير
+        function startInactivityTimer() {
+            if(sessionStorage.getItem('isAuthenticated') === 'true') {
+                 inactivityTimer = setTimeout(showWarning, INACTIVITY_LIMIT_MS);
+            }
+        }
+
+        // هذه الدالة تظهر شاشة التحذير وتبدأ العد التنازلي للخروج
+        function showWarning() {
+            const warningDiv = document.getElementById('inactivity-warning');
+            const countdownMsg = document.getElementById('countdown-message');
+            if(warningDiv) warningDiv.style.display = 'flex';
+            
+            let timeLeft = WARNING_TIME_MS / 1000; 
+
+            function updateCountdown() {
+                // التأكد من أن الجلسة ما زالت قائمة قبل استكمال العد
+                if (sessionStorage.getItem('isAuthenticated') !== 'true') {
+                    clearTimeout(countdownTimer);
+                    if(warningDiv) warningDiv.style.display = 'none';
+                    return;
+                }
+                
+                if(countdownMsg) countdownMsg.innerHTML = `<i class="fas fa-exclamation-triangle"></i> سيتم إغلاق الموقع خلال <strong>${timeLeft} ثانية</strong>.`;
+
+                if (timeLeft <= 0) {
+                    clearTimeout(countdownTimer);
+                    showNotification('انتهت مدة الجلسة الأمنية. سيتم تسجيل الخروج.', 'error'); 
+                    sessionTimeoutLogout(); // تنفيذ الخروج التلقائي
+                } else {
+                    timeLeft--;
+                    countdownTimer = setTimeout(updateCountdown, 1000);
+                }
+            }
+            
+            updateCountdown();
+        }
+        
+        // دالة الخروج التلقائي عند انتهاء الجلسة
+        function sessionTimeoutLogout() {
+            sessionStorage.removeItem('isAuthenticated');
+            sessionStorage.removeItem('adminUser');
+            clearTimeout(inactivityTimer);
+            clearTimeout(countdownTimer);
+            
+            // تحويل المستخدم لصفحة تسجيل الدخول بعد ظهور رسالة الخطأ
+            setTimeout(() => {
+                window.location.href = 'login.html';
+            }, 1500); 
+        }
+
+
+        // تفعيل تتبع النشاط
+        function setupInactivityTracking() {
+            const events = ['mousemove', 'mousedown', 'keypress', 'scroll', 'touchstart'];
+            events.forEach(event => {
+                document.addEventListener(event, resetTimer);
+            });
+            startInactivityTimer();
+        }
+
+
+        // =======================================================
+        //                   وظائف التشفير وفك التشفير
+        // =======================================================
+        function encryptData(data) {
+            let unencoded = unescape(encodeURIComponent(data));
+            let result = '';
+            for (let i = 0; i < unencoded.length; i++) {
+                result += String.fromCharCode(unencoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
+            }
+            return btoa(result);
+        }
+
+        function decryptData(hash) {
+            try {
+                let decoded = atob(hash);
+                let result = '';
+                for (let i = 0; i < decoded.length; i++) {
+                    result += String.fromCharCode(decoded.charCodeAt(i) ^ ENCRYPTION_KEY.charCodeAt(i % ENCRYPTION_KEY.length));
+                }
+                return decodeURIComponent(escape(result));
+            } catch (e) {
+                return JSON.stringify({});
+            }
+        }
+        
+        // =======================================================
+        //                   وظائف التحكم في الدخول (استخدام sessionStorage)
+        // =======================================================
+        function checkAuthentication() {
+            // التحقق من الجلسة في sessionStorage
+            const isAuthenticated = sessionStorage.getItem('isAuthenticated') === 'true'; 
+            const adminContent = document.getElementById('admin-content');
+            const authMessage = document.getElementById('auth-message');
+
+            if (!isAuthenticated) {
+                // تطبيق وضع القفل في حال عدم تسجيل الدخول
+                adminContent.classList.add('is-locked');
+                authMessage.innerHTML = `<p style="color: var(--light-danger); font-size: 18px;"><i class="fas fa-exclamation-triangle"></i> انتهت الجلسة. سيتم تحويلك لصفحة تسجيل الدخول.</p>`;
+                
+                // تحويل المستخدم لصفحة تسجيل الدخول بعد ظهور رسالة الخطأ
+                setTimeout(() => {
+                    window.location.href = 'login.html';
+                }, 2000);
+            } else {
+                authMessage.style.display = 'none';
+                adminContent.classList.remove('hidden-content');
+                adminContent.classList.remove('is-locked'); // إزالة القفل عند النجاح
+                initializePage();
+            }
+        }
+
+        // 🛑 دالة الخروج الرئيسية
+        function logout() {
+            showLogoutConfirmation();
+        }
+        window.logout = logout;
+
+        // 🛑 دالة عرض شاشة تأكيد تسجيل الخروج المبسطة
+        function showLogoutConfirmation() {
+            const modal = document.getElementById('logout-confirmation-modal');
+            const confirmBtn = document.getElementById('confirm-logout-direct');
+            const cancelBtn = document.getElementById('confirm-logout-cancel');
+
+            if (!modal) {
+                if (confirm('هل أنت متأكد من تسجيل الخروج؟')) {
+                    performLogout();
+                }
+                return;
+            }
+            
+            // تهيئة الأزرار (يتم تحديثها تلقائياً بعد تغيير innerHTML)
+            confirmBtn.onclick = () => {
+                modal.style.display = 'none';
+                performLogout(); 
+            };
+
+            cancelBtn.onclick = () => {
+                modal.style.display = 'none';
+            };
+
+            modal.style.display = 'flex';
+        }
+
+        // الوظيفة الأساسية لتنفيذ تسجيل الخروج بعد التأكيد أو التنزيل
+        function performLogout() {
+            // إزالة الجلسة من sessionStorage
+            sessionStorage.removeItem('isAuthenticated'); 
+            sessionStorage.removeItem('adminUser'); 
+            
+            // إيقاف المؤقتات الأمنية
+            clearTimeout(inactivityTimer);
+            clearTimeout(countdownTimer);
+            
+            window.location.href = 'login.html';
+        }
+
+        // =======================================================
+        //                   وظائف التعامل مع الصور (رفع من الجهاز)
+        // =======================================================
+        
+        // تحويل ملف الصورة إلى Base64
+        function readFileAsDataURL(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = () => resolve(reader.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsDataURL(file);
+            });
+        }
+
+        function setupImageModeSwitch() {
+            const urlBtn = document.getElementById('url-mode-btn');
+            const fileBtn = document.getElementById('file-mode-btn');
+            const urlInput = document.getElementById('product-image-url');
+            const fileInput = document.getElementById('product-image-file');
+
+            const switchMode = (mode) => {
+                const helpTextElement = document.getElementById('image-help-text');
+                if (mode === 'url') {
+                    urlInput.style.display = 'block';
+                    urlInput.required = true;
+                    fileInput.style.display = 'none';
+                    fileInput.required = false;
+                    urlBtn.classList.add('btn-primary');
+                    fileBtn.classList.remove('btn-primary');
+                    fileInput.value = ''; 
+                    if(helpTextElement) helpTextElement.textContent = '(ملاحظة: رفع الصورة مباشرة يزيد من حجم البيانات المحفوظة في المتصفح)'; 
+                } else {
+                    urlInput.style.display = 'none';
+                    urlInput.required = false;
+                    fileInput.style.display = 'block';
+                    fileInput.required = true;
+                    fileBtn.classList.add('btn-primary');
+                    urlBtn.classList.remove('btn-primary');
+                    urlInput.value = ''; 
+                    if(helpTextElement) helpTextElement.textContent = '(ملاحظة: رفع الصورة مباشرة يزيد من حجم البيانات المحفوظة في المتصفح)'; 
+                }
+            };
+            
+            urlBtn.addEventListener('click', () => switchMode('url'));
+            fileBtn.addEventListener('click', () => switchMode('file'));
+
+            switchMode('url');
+        }
+
+
+        // =======================================================
+        //                   وظائف الإدارة الرئيسية والخصم
+        // =======================================================
+
+        /**
+         * دالة مساعدة لحساب السعر بعد الخصم وتقريبه لرقمين عشريين
+         */
+        function calculateDiscountedPrice(price, discount) {
+            // التأكد من أن الخصم ضمن النطاق الصحيح
+            if (discount <= 0 || discount > 100 || isNaN(discount)) return price; 
+            const finalPrice = price * (1 - discount / 100);
+            // تقريب إلى خانتين عشريتين
+            return Math.round(finalPrice * 100) / 100; 
+        }
+
+        function loadProductsRaw() {
+            return JSON.parse(localStorage.getItem('productsEncrypted')) || []; // بيانات المنتجات تبقى في localStorage
+        }
+        
+        function getProductById(productId) {
+            const productsEncrypted = loadProductsRaw();
+            const rawItem = productsEncrypted.find(item => item.id === productId);
+            if (rawItem) {
+                const decryptedData = decryptData(rawItem.data);
+                try {
+                    return JSON.parse(decryptedData);
+                } catch(e) {
+                    console.error("Failed to parse decrypted data:", decryptedData);
+                    return null;
+                }
+            }
+            return null;
+        }
+        
+        // 🛑 دالة الحفظ الفعلي للمنتج بعد جمع البيانات (تُستدعى مباشرة للإضافة، وعبر PIN للتعديل)
+        async function performSave(product) {
+            const productString = JSON.stringify(product);
+            const encryptedData = encryptData(productString);
+
+            let productsEncrypted = loadProductsRaw();
+            
+            const index = productsEncrypted.findIndex(item => item.id === product.id);
+
+            if (index !== -1) {
+                // تعديل منتج موجود
+                productsEncrypted[index].data = encryptedData;
+                showNotification(`✅ تم تعديل المنتج "${product.name}" بنجاح!`, 'success'); 
+            } else {
+                // إضافة منتج جديد
+                productsEncrypted.push({ id: product.id, data: encryptedData });
+                showNotification(`✅ تم حفظ المنتج "${product.name}" بنجاح!`, 'success'); 
+            }
+            
+            localStorage.setItem('productsEncrypted', JSON.stringify(productsEncrypted));
+            
+            resetForm();
+            // إعادة عرض القائمة مع تطبيق فلتر البحث الحالي إن وجد
+            renderProductList(document.getElementById('product-search').value);
+            
+            // 🛑 عرض شاشة تأكيد النسخة الاحتياطية بدلاً من رسالة التذكير
+            showBackupPrompt(false); 
+        }
+
+        /**
+         * 🛑 دالة توليد الكلمات المفتاحية تلقائياً بناءً على اسم المنتج والفئة والسعر
+         */
+        window.generateKeywordsFromFields = function() {
+            const name = document.getElementById('product-name').value.trim();
+            const type = document.getElementById('product-type').value.trim();
+            const price = parseFloat(document.getElementById('product-price').value);
+
+            // 1. جمع الكلمات الأساسية
+            let newKeywords = [];
+            
+            // إضافة الكلمات من الاسم (تقسيم بالمسافة)
+            name.split(/\s+/).forEach(word => {
+                if (word.length > 1) newKeywords.push(word);
+            });
+
+            // إضافة الفئة
+            if (type && type !== 'أخرى') newKeywords.push(type);
+            
+            // إضافة السعر ككلمة مفتاحية (إذا كان رقمًا صحيحًا)
+            if (!isNaN(price) && price > 0) {
+                const integerPrice = Math.floor(price);
+                // نضيف السعر إذا كان لا يوجد له أصفار على اليمين 
+                if (price.toString().split('.')[0] !== '0') {
+                    newKeywords.push(integerPrice.toString());
+                }
+            }
+
+
+            // 2. تنقية الكلمات وإزالة التكرارات
+            const finalKeywords = newKeywords
+                .map(k => k.toLowerCase().replace(/[^\u0600-\u06FFa-zA-Z0-9\s]/g, '').trim()) // إزالة علامات الترقيم والأحرف غير المرغوبة
+                .filter(k => k.length > 1) // إزالة الكلمات القصيرة
+                .filter((value, index, self) => self.indexOf(value) === index); // إزالة التكرارات
+
+            // 3. تحديث مربع النص (يفضل الفصل بالفاصلة والمسافة لسهولة القراءة)
+            const newDescription = finalKeywords.join(', ');
+            document.getElementById('product-description').value = newDescription;
+        };
+
+        // 🛑 دالة saveProduct الجديدة (تجمع البيانات وتنفذ الحفظ أو تطلب PIN)
+        async function saveProduct(event) {
+            event.preventDefault();
+
+            const productIdToEdit = document.getElementById('product-id-to-edit').value;
+            const isEdit = !!productIdToEdit; // 🛑 تحديد ما إذا كان تعديلاً
+            
+            const name = document.getElementById('product-name').value.trim();
+            const priceInput = document.getElementById('product-price');
+            const price = parseFloat(priceInput.value);
+            const currency = document.getElementById('product-currency').value;
+            const type = document.getElementById('product-type').value;
+            // 🛑 نعتمد على ما أدخله المستخدم أو ما تم توليده في الحقل مباشرة
+            const description = document.getElementById('product-description').value.trim(); 
+            
+            // --- 1. Validation ---
+            if (name.length < 2) {
+                 showNotification('❌ خطأ: اسم المنتج قصير جداً.', 'error', 4000);
+                 return;
+            }
+
+            if (isNaN(price) || price <= 0) {
+                 showNotification('❌ خطأ: يجب إدخال سعر أصلي صحيح أكبر من صفر.', 'error', 4000);
+                 return;
+            }
+
+
+            // 🛑 Discount Logic - تحديد قيمة الخصم النهائية
+            const isPercentMode = document.getElementById('discount-mode-percent').classList.contains('btn-primary');
+            const percentInput = document.getElementById('product-discount-percent');
+            const priceInputDiscounted = document.getElementById('product-discount-price');
+            
+            let discountValue = 0;
+            
+            if (isPercentMode) {
+                discountValue = parseFloat(percentInput.value) || 0;
+            } else {
+                const finalPriceInput = parseFloat(priceInputDiscounted.value);
+                const originalPrice = price;
+
+                if (finalPriceInput >= originalPrice) {
+                    showNotification('❌ خطأ: السعر بعد الخصم يجب أن يكون أقل من السعر الأصلي. يرجى تصحيح السعر.', 'error', 4000);
+                    return;
+                }
+                
+                const discountAmount = originalPrice - finalPriceInput;
+                discountValue = (discountAmount / originalPrice) * 100;
+            }
+            
+            if (discountValue < 0 || discountValue > 100) {
+                 showNotification('❌ خطأ: يجب أن تكون نسبة الخصم المحسوبة بين 0 و 100.', 'error', 4000);
+                 return;
+            }
+
+
+            // --- 2. Image Processing ---
+            const urlInput = document.getElementById('product-image-url');
+            const fileInput = document.getElementById('product-image-file');
+
+            let imageSource = '';
+            
+            if (fileInput.files.length > 0 && fileInput.style.display !== 'none') {
+                try {
+                    imageSource = await readFileAsDataURL(fileInput.files[0]);
+                    if (imageSource.length > (3 * 1024 * 1024)) { 
+                        showNotification('تحذير: حجم الصورة التي تم رفعها كبير جداً وقد يؤدي إلى بطء المتصفح. يرجى اختيار صورة أصغر أو استخدام رابط خارجي.', 'warning', 6000);
+                    }
+                } catch (e) {
+                    showNotification('حدث خطأ أثناء قراءة ملف الصورة. تأكد من أن الملف هو صورة صالحة.', 'error');
+                    return;
+                }
+            } else if (urlInput.value.trim() && urlInput.style.display !== 'none') {
+                imageSource = urlInput.value.trim();
+            } else if (productIdToEdit) {
+                const existingProduct = getProductById(productIdToEdit);
+                imageSource = existingProduct ? existingProduct.image : '';
+            }
+
+            if (!imageSource) {
+                showNotification('الرجاء تعبئة جميع الحقول المطلوبة (بما في ذلك الصورة).', 'warning');
+                return;
+            }
+
+            // --- 3. Final Product Data ---
+            const productData = { 
+                id: productIdToEdit || ('prod_' + Date.now()),
+                name, 
+                price: price, 
+                discount: discountValue,
+                currency, 
+                type, 
+                description, 
+                image: imageSource
+            };
+            
+            // --- 4. Decide on Save Method (Direct Save for Add, PIN for Edit) ---
+            if (!isEdit) {
+                // 🛑 إضافة منتج جديد: حفظ مباشر
+                performSave(productData); 
+            } else {
+                // 🛑 تعديل منتج موجود: طلب رمز التأكيد أولاً
+                requestPin('edit', productData); // نمرر نوع الإجراء وبيانات المنتج
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('product-form').reset();
+            document.getElementById('product-id-to-edit').value = '';
+            document.getElementById('save-button').innerHTML = '<i class="fas fa-save"></i> حفظ المنتج الجديد';
+            document.getElementById('page-title').textContent = 'إضافة منتج جديد 🛒';
+            document.getElementById('cancel-edit-button').style.display = 'none';
+            document.getElementById('product-discount-percent').value = '0'; // 🛑 إعادة الخصم للقيمة الافتراضية
+            document.getElementById('product-discount-price').value = ''; 
+            document.getElementById('discount-auto-calc-message').textContent = '';
+            setupImageModeSwitch(); 
+            setupDiscountSwitch('percent'); // 🛑 إعادة تهيئة وضع الخصم الافتراضي
+        }
+        document.getElementById('cancel-edit-button').addEventListener('click', resetForm);
+
+        window.editProduct = function(productId) {
+            const product = getProductById(productId);
+            if (!product) {
+                showNotification('خطأ: لم يتم العثور على المنتج المطلوب تعديله.', 'error');
+                return;
+            }
+
+            document.getElementById('product-id-to-edit').value = product.id;
+            document.getElementById('product-name').value = product.name;
+            document.getElementById('product-price').value = product.price;
+            
+            document.getElementById('product-discount-percent').value = product.discount || 0; 
+            
+            setupDiscountSwitch('percent'); 
+            
+            handleDiscountChange(document.getElementById('product-discount-percent'), 'percent', true);
+            
+            document.getElementById('product-currency').value = product.currency;
+            document.getElementById('product-type').value = product.type;
+            document.getElementById('product-description').value = product.description;
+
+            const isBase64 = product.image && product.image.startsWith('data:');
+            const helpTextElement = document.getElementById('image-help-text');
+            const urlInput = document.getElementById('product-image-url');
+
+            urlInput.value = product.image || ''; 
+            document.getElementById('url-mode-btn').click(); 
+            
+            if (isBase64) {
+                if(helpTextElement) helpTextElement.textContent = '(ملاحظة: تم تحميل الصورة مسبقًا كملف مشفر (Base64). لا تقم بحذف هذا النص الطويل إلا إذا كنت تريد استبدال الصورة برابط أو ملف جديد.)';
+            } else {
+                if(helpTextElement) helpTextElement.textContent = '(ملاحظة: رفع الصورة مباشرة يزيد من حجم البيانات المحفوظة في المتصفح)';
+            }
+            
+            document.getElementById('page-title').textContent = `تعديل المنتج: ${product.name}`;
+            document.getElementById('save-button').innerHTML = '<i class="fas fa-pen"></i> حفظ التعديلات';
+            document.getElementById('cancel-edit-button').style.display = 'inline-block';
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        
+        // 🛑 دالة مساعدة لتنفيذ الحذف الفعلي (تُستدعى بعد إدخال PIN ونافذة التأكيد)
+        function performDeletion(productId) {
+            let productsEncrypted = loadProductsRaw();
+            const updatedProducts = productsEncrypted.filter(item => item.id !== productId);
+            
+            // تحقق أمني إضافي: للتأكد من أن المنتج كان موجوداً فعلاً
+            if (updatedProducts.length === productsEncrypted.length) {
+                showNotification('❌ فشل الحذف. لم يتم العثور على المنتج.', 'error');
+                return;
+            }
+            
+            localStorage.setItem('productsEncrypted', JSON.stringify(updatedProducts));
+
+            showNotification('✅ تم حذف المنتج بنجاح.', 'success'); 
+            
+            // عرض شاشة تأكيد النسخة الاحتياطية بعد الحذف
+            showBackupPrompt(true); 
+            
+            const searchInput = document.getElementById('product-search');
+            renderProductList(searchInput ? searchInput.value : '');
+        }
+
+        window.deleteProduct = function(productId) {
+            // 🛑 استبدال رسالة التأكيد بطلب رمز التأكيد
+            requestPin('delete', productId);
+        }
+        
+        // 🛑 دالة إعداد مفتاح التبديل بين وضع الخصم
+        function setupDiscountSwitch(initialMode = 'percent') {
+            const percentBtn = document.getElementById('discount-mode-percent');
+            const priceBtn = document.getElementById('discount-mode-price');
+            const percentGroup = document.getElementById('discount-percent-group');
+            const priceGroup = document.getElementById('discount-price-group');
+            const percentInput = document.getElementById('product-discount-percent');
+            const originalPriceInput = document.getElementById('product-price');
+            
+            const switchMode = (mode) => {
+                if (mode === 'percent') {
+                    percentBtn.classList.add('btn-primary');
+                    priceBtn.classList.remove('btn-primary');
+                    percentGroup.style.display = 'block';
+                    priceGroup.style.display = 'none';
+                    // عند التبديل إلى النسبة، نحسب النسبة من السعر بعد الخصم (إن وجد) ونحدث النسبة
+                    handleDiscountChange(document.getElementById('product-discount-price'), 'price-after', true);
+                } else {
+                    priceBtn.classList.add('btn-primary');
+                    percentBtn.classList.remove('btn-primary');
+                    priceGroup.style.display = 'block';
+                    percentGroup.style.display = 'none';
+                    // عند التبديل إلى السعر بعد الخصم، نحسب السعر من النسبة ونحدث السعر
+                    handleDiscountChange(percentInput, 'percent', true);
+                }
+            };
+            
+            percentBtn.onclick = () => switchMode('percent');
+            priceBtn.onclick = () => switchMode('price-after');
+            
+            // تطبيق الوضع الأولي
+            switchMode(initialMode);
+            
+            // ربط مدخل السعر الأصلي بالتغييرات
+            originalPriceInput.oninput = () => {
+                // 🛑 إضافة توليد الكلمات المفتاحية
+                generateKeywordsFromFields();
+                
+                const isPercentMode = percentBtn.classList.contains('btn-primary');
+                if (isPercentMode) {
+                    handleDiscountChange(percentInput, 'percent', true);
+                } else {
+                    handleDiscountChange(document.getElementById('product-discount-price'), 'price-after', true);
+                }
+            };
+        }
+        
+        // 🛑 دالة معالجة تغييرات الخصم (الحساب والتصحيح التلقائي)
+        window.handleDiscountChange = function(inputElement, mode, isSilent = false) {
+            const originalPriceInput = document.getElementById('product-price');
+            const originalPrice = parseFloat(originalPriceInput.value);
+            const percentInput = document.getElementById('product-discount-percent');
+            const priceInput = document.getElementById('product-discount-price');
+            const messageElement = document.getElementById('discount-auto-calc-message');
+            const currency = document.getElementById('product-currency').value;
+            
+            if (isNaN(originalPrice) || originalPrice <= 0) {
+                if (!isSilent) showNotification('❌ الرجاء إدخال السعر الأصلي أولاً.', 'warning', 3000);
+                // لا نمسح القيمة في وضع الإدخال الصامت حتى لا نفقد القيمة
+                if (!isSilent) inputElement.value = ''; 
+                messageElement.textContent = '';
+                return;
+            }
+            
+            let calculatedPercentage = 0;
+            let calculatedPrice = 0;
+            
+            // Case 1: Input is Discount Percentage (%)
+            if (mode === 'percent') {
+                let percent = parseFloat(inputElement.value) || 0;
+                
+                // Validation: Must be between 0 and 100
+                if (percent > 100) {
+                    percent = 100;
+                    inputElement.value = '100';
+                    if (!isSilent) showNotification('⚠️ نسبة الخصم لا يمكن أن تتجاوز 100%. تم التعديل تلقائياً.', 'warning', 4000);
+                } else if (percent < 0) {
+                    percent = 0;
+                    inputElement.value = '0';
+                }
+                
+                calculatedPercentage = percent;
+                calculatedPrice = calculateDiscountedPrice(originalPrice, calculatedPercentage);
+                
+                // تحديث حقل السعر بعد الخصم بصمت
+                priceInput.value = calculatedPrice.toFixed(2);
+                
+                messageElement.textContent = `السعر بعد الخصم هو: ${calculatedPrice.toFixed(2)} ${currency}`;
+            } 
+            
+            // Case 2: Input is Price After Discount
+            else if (mode === 'price-after') {
+                let finalPrice = parseFloat(inputElement.value);
+                
+                if (isNaN(finalPrice)) {
+                    messageElement.textContent = '';
+                    percentInput.value = '0';
+                    return;
+                }
+
+                // 🛑 Validation/Auto-Correction: If finalPrice >= originalPrice
+                if (finalPrice >= originalPrice) {
+                    // تصحيح تلقائي: السعر الأصلي - 0.01 (نضمن أنه أقل)
+                    const correctedPrice = Math.max(0.01, originalPrice - 0.01); 
+                    inputElement.value = correctedPrice.toFixed(2);
+                    finalPrice = correctedPrice;
+                    
+                    if (!isSilent) showNotification('⚠️ السعر بعد الخصم لا يمكن أن يكون أكبر أو يساوي السعر الأصلي. تم تعديله تلقائياً.', 'warning', 6000);
+                } else if (finalPrice < 0.01) {
+                    finalPrice = 0.01;
+                    inputElement.value = '0.01';
+                }
+                
+                calculatedPrice = finalPrice;
+                
+                // Calculate the percentage
+                const discountAmount = originalPrice - calculatedPrice;
+                calculatedPercentage = (discountAmount / originalPrice) * 100;
+                
+                // تحديث حقل النسبة المئوية
+                percentInput.value = calculatedPercentage.toFixed(2);
+                
+                messageElement.textContent = `نسبة الخصم المحسوبة هي: ${calculatedPercentage.toFixed(2)}%`;
+            }
+        }
+
+        // 🛑 دالة عرض المنتجات تتلقى قيمة البحث
+        function renderProductList(searchTerm = '') {
+            const listContainer = document.getElementById('product-list');
+            listContainer.innerHTML = '';
+            const allProductsRaw = loadProductsRaw();
+            
+            const lowerCaseSearchTerm = searchTerm.toLowerCase().trim();
+
+            const filteredProducts = allProductsRaw.filter(rawItem => {
+                const product = getProductById(rawItem.id);
+                if (!product || !product.name) return false;
+                
+                if (lowerCaseSearchTerm === '') return true; 
+                
+                // البحث في الاسم والوصف (الكلمات المفتاحية)
+                const nameMatches = product.name.toLowerCase().includes(lowerCaseSearchTerm);
+                const descriptionMatches = product.description && product.description.toLowerCase().includes(lowerCaseSearchTerm);
+                
+                return nameMatches || descriptionMatches;
+            });
+
+            if (filteredProducts.length === 0) {
+                listContainer.innerHTML = `<p style="text-align: center; padding: 20px; color: var(--light-primary);">لا توجد منتجات مطابقة لنتيجة البحث "${searchTerm}".</p>`;
+                return;
+            }
+
+            filteredProducts.forEach(rawItem => { 
+                const product = getProductById(rawItem.id);
+                if (!product || !product.name) return;
+                
+                // Discount Calculation and Display Logic
+                const originalPrice = product.price;
+                const discountPercentage = product.discount || 0;
+                const finalPrice = calculateDiscountedPrice(originalPrice, discountPercentage);
+
+                let priceDisplay;
+                let discountBadge = '';
+
+                if (discountPercentage > 0) {
+                    priceDisplay = `
+                        <div class="price-details">
+                            <span class="original-price">${originalPrice.toFixed(2)} ${product.currency}</span>
+                            <span class="discounted-price">${finalPrice.toFixed(2)} ${product.currency}</span>
+                        </div>
+                    `;
+                    discountBadge = `<span class="discount-badge">خصم ${discountPercentage.toFixed(1).replace(/\.0$/, '')}%</span>`; // عرض الخصم بدون .0
+                } else {
+                    // عرض السعر العادي كأنه السعر المخصوم لتوحيد التنسيق
+                    priceDisplay = `
+                        <div class="price-details">
+                            <span class="discounted-price">${originalPrice.toFixed(2)} ${product.currency}</span>
+                        </div>
+                    `;
+                }
+
+                const item = document.createElement('div');
+                item.className = 'product-item';
+                item.innerHTML = `
+                    <div class="item-details">
+                        <img src="${product.image || 'placeholder.png'}" alt="${product.name}" 
+                             style="width: 40px; height: 40px; object-fit: cover; border-radius: 4px; margin-left: 10px;">
+                        <strong>${product.name}</strong> 
+                        ${discountBadge} ${priceDisplay} <span style="color: #999; font-size: 12px; margin-right: 15px;">الفئة: ${product.type}</span>
+                    </div>
+                    <div class="actions">
+                        <button class="btn btn-success" onclick="editProduct('${product.id}')">
+                            <i class="fas fa-pen"></i> تعديل
+                        </button>
+                        <button class="btn btn-danger" onclick="deleteProduct('${product.id}')">
+                            <i class="fas fa-trash"></i> حذف
+                        </button>
+                    </div>
+                `;
+                listContainer.appendChild(item);
+            });
+        }
+        
+        // دالة إعداد البحث
+        function setupSearchFilter() {
+            const searchInput = document.getElementById('product-search');
+            if (searchInput) {
+                searchInput.addEventListener('input', (event) => {
+                    // للتأكد من عدم تجاوز الـ 20 حرفاً
+                    let searchTerm = event.target.value;
+                    if (searchTerm.length > 20) {
+                        searchTerm = searchTerm.substring(0, 20);
+                        event.target.value = searchTerm; // قص القيمة في الحقل
+                    }
+                    renderProductList(searchTerm);
+                });
+            }
+        }
+        
+        // =======================================================
+        //                      الوضع الليلي / الفاتح
+        // =======================================================
+        
+        function toggleDarkMode() {
+            document.body.classList.toggle('dark-mode');
+            const isDark = document.body.classList.contains('dark-mode');
+            localStorage.setItem('darkMode', isDark ? 'enabled' : 'disabled'); // تفضيل الوضع يبقى في localStorage
+            document.getElementById('mode-toggle').innerHTML = isDark ? '<i class="fas fa-sun"></i> الوضع الفاتح' : '<i class="fas fa-moon"></i> الوضع الداكن';
+        }
+
+        function applyInitialMode() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+                document.getElementById('mode-toggle').innerHTML = '<i class="fas fa-sun"></i> الوضع الفاتح';
+            } else {
+                document.getElementById('mode-toggle').innerHTML = '<i class="fas fa-moon"></i> الوضع الداكن';
+            }
+        }
+        
+        // =======================================================
+        //                      🛑 وظائف إغلاق النوافذ المنبثقة بالضغط على الهامش
+        // =======================================================
+
+        function setupModalCloseOnMarginClick(modalId, closeAction) {
+            const modal = document.getElementById(modalId);
+            if (modal) {
+                modal.addEventListener('click', function(event) {
+                    // التحقق مما إذا كان النقر على خلفية الـ modal وليس داخل الصندوق الداخلي
+                    if (event.target === modal) {
+                        closeAction();
+                    }
+                });
+            }
+        }
+        
+        function closeBackupConfirmationModal() {
+             const modal = document.getElementById('backup-confirmation-modal');
+             if (modal) {
+                clearTimeout(countdownBackupTimer); // إيقاف العد التنازلي
+                modal.style.display = 'none';
+             }
+             showNotification('تم إلغاء تأكيد النسخة الاحتياطية.', 'info', 3000);
+        }
+        
+        function closeLogoutConfirmationModal() {
+             const modal = document.getElementById('logout-confirmation-modal');
+             if (modal) modal.style.display = 'none';
+        }
+        
+        function closePinModal() {
+             const modal = document.getElementById('pin-modal');
+             if (modal) modal.style.display = 'none';
+             pendingActionData = null; // إلغاء الإجراء المعلق
+             showNotification('تم إلغاء عملية التأكيد.', 'info', 3000);
+        }
+
+        function closeBackupPromptModal() {
+            const modal = document.getElementById('backup-prompt-modal');
+            if (modal) modal.style.display = 'none';
+        }
+        
+        function closeDeleteConfirmationModal() {
+            const modal = document.getElementById('delete-confirmation-modal');
+            if (modal) modal.style.display = 'none';
+            showNotification('تم إلغاء عملية الحذف.', 'info', 3000);
+        }
+
+        function setupMarginCloseListeners() {
+            // شاشة تأكيد النسخة الاحتياطية (عند الاستعادة)
+            setupModalCloseOnMarginClick('backup-confirmation-modal', closeBackupConfirmationModal);
+            
+            // شاشة تأكيد تسجيل الخروج
+            setupModalCloseOnMarginClick('logout-confirmation-modal', closeLogoutConfirmationModal);
+            
+            // شاشة رمز التأكيد (PIN)
+            setupModalCloseOnMarginClick('pin-modal', closePinModal);
+            
+            // شاشة طلب تنزيل النسخة الاحتياطية بعد الحفظ/الحذف
+            setupModalCloseOnMarginClick('backup-prompt-modal', closeBackupPromptModal);
+            
+            // 🛑 شاشة تأكيد الحذف
+            setupModalCloseOnMarginClick('delete-confirmation-modal', closeDeleteConfirmationModal);
+        }
+
+
+        // =======================================================
+        //                      تهيئة الصفحة والأحداث
+        // =======================================================
+        
+        function initializePage() {
+            applyInitialMode();
+            setupImageModeSwitch(); 
+            setupDiscountSwitch('percent'); // 🛑 تهيئة وضع إدخال الخصم 
+            renderProductList();
+            setupInactivityTracking(); // بدء تتبع عدم النشاط وتفعيل مؤقت الجلسة
+            setupSearchFilter(); 
+            setupMarginCloseListeners(); // 🛑 إعداد وظيفة إغلاق النوافذ بالضغط على الهامش
+
+            document.getElementById('product-form').addEventListener('submit', saveProduct);
+            document.getElementById('mode-toggle').addEventListener('click', toggleDarkMode);
+
+            // 🛑 تفعيل التوليد التلقائي للكلمات المفتاحية عند تغيير الحقول المعنية
+            document.getElementById('product-name').addEventListener('input', generateKeywordsFromFields);
+            document.getElementById('product-type').addEventListener('change', generateKeywordsFromFields);
+            // تمت إضافة المستمع للسعر الأصلي بالفعل داخل setupDiscountSwitch، ولكن لضمان التغطية:
+            document.getElementById('product-price').addEventListener('input', generateKeywordsFromFields); 
+        }
+        
+        document.addEventListener('DOMContentLoaded', checkAuthentication);
+    </script>
+</body>
+</html>

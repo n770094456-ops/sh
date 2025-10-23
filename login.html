@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تسجيل الدخول - لوحة الإدارة</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* ======================================================= */
+        /* 1. التنسيق الأساسي والوضع الليلي/الفاتح                  */
+        /* ======================================================= */
+        :root {
+            --light-bg: #f8f9fa; 
+            --light-primary: #007bff; 
+            --light-secondary: #ffffff; 
+            --light-text: #343a40; 
+            --light-danger: #dc3545; 
+            --light-success: #28a745; 
+            --light-warning: #ffc107;
+            --login-neon-color: var(--light-primary); 
+        }
+        /* 🛑 تحديث الألوان للوضع الداكن (GitHub Style) */
+        .dark-mode {
+            --light-bg: #0D1117; /* خلفية GitHub */
+            --light-primary: #58A6FF; /* أزرق GitHub */
+            --light-secondary: #161B22; /* خلفية الصندوق */
+            --light-text: #C9D1D9; /* لون النص */
+            --light-danger: #f85149; 
+            --light-success: #3fb950; 
+            --light-warning: #d29922;
+            --login-neon-color: #58A6FF;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background-color: var(--light-bg);
+            color: var(--light-text);
+            transition: background-color 0.3s, color 0.3s;
+            direction: rtl;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        /* 2. تنسيق صندوق تسجيل الدخول الجديد (تأثير الحدود المتحركة) */
+        .login-container {
+            background-color: var(--light-secondary);
+            padding: 40px;
+            border-radius: 10px;
+            width: 90%;
+            max-width: 400px;
+            text-align: center;
+            position: relative;
+            overflow: hidden; 
+            border: 1px solid rgba(0, 0, 0, 0.1); 
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        /* تأثير الحدود المتحركة (Neon Border Effect) */
+        .login-container::before {
+            content: '';
+            position: absolute;
+            top: -100px; 
+            left: -100px; 
+            width: 500px; 
+            height: 500px; 
+            background: conic-gradient(
+                transparent 0deg,
+                var(--login-neon-color) 0deg,
+                var(--light-success) 45deg,
+                var(--light-warning) 90deg,
+                var(--light-danger) 135deg,
+                var(--login-neon-color) 180deg,
+                transparent 180deg
+            );
+            z-index: 0;
+            animation: rotate-border 4s linear infinite;
+        }
+
+        /* طبقة التغطية لجعل التأثير يظهر كحدود فقط */
+        .login-container::after {
+            content: '';
+            position: absolute;
+            top: 2px; 
+            left: 2px;
+            right: 2px;
+            bottom: 2px;
+            background-color: var(--light-secondary);
+            border-radius: 8px; 
+            z-index: 1;
+        }
+
+        .login-container > * {
+            position: relative;
+            z-index: 2; 
+        }
+
+        @keyframes rotate-border {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        h2 {
+            color: var(--light-primary);
+            margin-bottom: 30px;
+            font-size: 24px;
+        }
+
+        .form-group { margin-bottom: 20px; text-align: right; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; font-size: 14px; }
+        input[type="text"], input[type="password"], input[type="tel"] {
+            width: 100%; padding: 12px; border: 1px solid #ced4da; border-radius: 5px;
+            box-sizing: border-box; background-color: var(--light-bg); color: var(--light-text);
+            transition: border-color 0.3s;
+        }
+        input[type="text"]:focus, input[type="password"]:focus, input[type="tel"]:focus {
+            border-color: var(--light-primary); outline: none;
+        }
+        
+        .btn {
+            width: 100%; padding: 12px; border: none; border-radius: 5px;
+            background-color: var(--light-primary); color: white; font-size: 16px; cursor: pointer;
+            transition: background-color 0.3s, transform 0.2s; margin-top: 10px;
+        }
+        .btn:hover { background-color: #0056b3; transform: translateY(-2px); }
+        
+        /* تنسيق الرسائل */
+        .message-box {
+            padding: 12px; border-radius: 6px; margin-top: 15px; margin-bottom: 10px;
+            font-size: 14px; font-weight: bold; display: flex; align-items: center; gap: 10px; z-index: 10;
+        }
+        .message-error { background-color: #dc35451a; color: var(--light-danger); border: 1px solid var(--light-danger); }
+        .message-success { background-color: #28a7451a; color: var(--light-success); border: 1px solid var(--light-success); }
+
+        /* تنسيق رسالة التحميل الجديدة */
+        .loading-spinner {
+            display: none; margin-top: 15px; color: var(--light-primary);
+        }
+        .loading-spinner i {
+            font-size: 30px; animation: spin 1.5s linear infinite;
+        }
+        .loading-spinner span {
+            display: block; margin-top: 10px; font-size: 16px; font-weight: bold;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Dark Mode adjustments (GitHub Style) */
+        .dark-mode .login-container { background-color: var(--light-secondary); border-color: #3b4249; box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5); }
+        .dark-mode input { background-color: #2b3035; border-color: #3b4249; }
+        .dark-mode .login-container::after { background-color: var(--light-secondary); }
+
+    </style>
+</head>
+<body>
+
+    <div class="login-container">
+        <h2>تسجيل الدخول للإدارة</h2>
+        <form id="login-form">
+            <div class="form-group">
+                <label for="username"><i class="fas fa-user"></i> اسم المستخدم:</label>
+                <input type="text" id="username" required pattern="[A-Za-z\u0600-\u06FF\s]+" title="يجب أن يحتوي اسم المستخدم على حروف إنجليزية أو عربية فقط.">
+            </div>
+            <div class="form-group">
+                <label for="password"><i class="fas fa-lock"></i> كلمة المرور:</label>
+                <input type="password" id="password" required 
+                       pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{5,}$" 
+                       title="يجب أن تحتوي كلمة المرور على حروف إنجليزية كبيرة وصغيرة وأرقام (بحد أدنى 5 أحرف)." 
+                       maxlength="20">
+            </div>
+            <div id="message-container"></div>
+            <button type="submit" class="btn">دخول</button>
+        </form>
+        
+        <div id="loading-message" class="loading-spinner">
+            <i class="fas fa-cog"></i>
+            <span>تم التحقق بنجاح. جاري تهيئة لوحة الإدارة...</span>
+        </div>
+        
+        <a href="products.html" style="display: block; margin-top: 20px; color: #6c757d; text-decoration: none;">العودة للمتجر</a>
+    </div>
+
+    <script>
+        // =======================================================
+        //                إعدادات الدخول والأمان
+        // =======================================================
+        const CORRECT_USERNAME = "MyNewAdmin";
+        const CORRECT_PASSWORD = "nalshA1234";
+        const ADMIN_PAGE_URL = "add_product.html";
+        const MAX_ATTEMPTS = 7;
+        const LOCKOUT_KEY = 'adminLocked'; 
+        const ATTEMPT_KEY = 'loginAttempts'; 
+        const LAST_FAILED_KEY = 'lastFailedAttempt'; 
+        const MAX_DUPLICATE_ATTEMPTS = 3; 
+        
+        function displayMessage(message, type) {
+            const container = document.getElementById('message-container');
+            container.innerHTML = ''; 
+            const icon = type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-triangle';
+            const className = type === 'success' ? 'message-success' : 'message-error';
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-box ${className}`;
+            messageDiv.innerHTML = `<i class="${icon}"></i> <span>${message}</span>`;
+            container.appendChild(messageDiv);
+        }
+        function displayError(message) { displayMessage(message, 'error'); }
+        function displaySuccess(message) { displayMessage(message, 'success'); }
+        function clearMessages() { document.getElementById('message-container').innerHTML = ''; }
+
+        function isUsernameValid(username) {
+            const pattern = /^[A-Za-z\u0600-\u06FF\s]+$/;
+            return pattern.test(username);
+        }
+
+        function isPasswordValid(password) {
+            const pattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{5,}$/;
+            return pattern.test(password);
+        }
+
+        document.getElementById('login-form').addEventListener('submit', function(event) {
+            event.preventDefault();
+            clearMessages(); 
+
+            if (localStorage.getItem(LOCKOUT_KEY) === 'true') {
+                displayError('⚠️ تم تجاوز الحد الأقصى لمحاولات الدخول الفاشلة. لوحة الإدارة مقفلة. يرجى التواصل مع الدعم.');
+                return;
+            }
+            
+            const usernameInput = document.getElementById('username').value.trim();
+            const passwordInput = document.getElementById('password').value.trim();
+            
+            if (usernameInput.includes(' ') || passwordInput.includes(' ') || !isUsernameValid(usernameInput) || !isPasswordValid(passwordInput)) {
+                displayError('خطأ في الإدخال: يرجى التحقق من اسم المستخدم وكلمة المرور.');
+                return;
+            }
+
+
+            if (usernameInput === CORRECT_USERNAME && passwordInput === CORRECT_PASSWORD) {
+                // ✅ تسجيل دخول ناجح 
+                sessionStorage.setItem('isAuthenticated', 'true');
+                sessionStorage.setItem('adminUser', usernameInput);
+                
+                localStorage.removeItem(ATTEMPT_KEY);
+                localStorage.removeItem(LAST_FAILED_KEY);
+                localStorage.removeItem('duplicateCount');
+                
+                document.getElementById('login-form').style.display = 'none';
+                document.getElementById('loading-message').style.display = 'block';
+
+                setTimeout(() => {
+                    window.location.href = ADMIN_PAGE_URL;
+                }, 1500); 
+            } else {
+                // ❌ تسجيل دخول فاشل
+                
+                const currentFailedAttempt = usernameInput + '|' + passwordInput;
+                const lastFailedAttempt = localStorage.getItem(LAST_FAILED_KEY);
+                let attempts = parseInt(localStorage.getItem(ATTEMPT_KEY) || 0);
+                let shouldCountAttempt = true;
+                
+                if (currentFailedAttempt === lastFailedAttempt) {
+                    let duplicateCount = parseInt(localStorage.getItem('duplicateCount') || 0) + 1;
+                    localStorage.setItem('duplicateCount', duplicateCount);
+                    if (duplicateCount >= MAX_DUPLICATE_ATTEMPTS) {
+                        shouldCountAttempt = false; 
+                    }
+                } else {
+                    localStorage.setItem(LAST_FAILED_KEY, currentFailedAttempt);
+                    localStorage.setItem('duplicateCount', 1);
+                }
+
+                if (shouldCountAttempt) {
+                    attempts += 1;
+                    localStorage.setItem(ATTEMPT_KEY, attempts);
+                }
+
+                if (attempts >= MAX_ATTEMPTS) {
+                    localStorage.setItem(LOCKOUT_KEY, 'true');
+                    displayError('❌ خطأ: تجاوزت الحد الأقصى لعدد المحاولات الفاشلة (7). تم قفل لوحة الإدارة.');
+                } else {
+                    displayError(`❌ خطأ: اسم المستخدم أو كلمة المرور غير صحيحة. المحاولة رقم ${attempts} من ${MAX_ATTEMPTS}.`);
+                }
+            }
+        });
+
+        // =======================================================
+        //                تطبيق الوضع الليلي ورسالة فك القفل
+        // =======================================================
+        function applyInitialMode() {
+            if (localStorage.getItem('darkMode') === 'enabled') {
+                document.body.classList.add('dark-mode');
+            }
+        }
+
+        function clearLoginFieldsOnLoad() {
+             document.getElementById('username').value = '';
+             document.getElementById('password').value = '';
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            clearLoginFieldsOnLoad();
+            applyInitialMode();
+            
+            if (localStorage.getItem('unlockedBySupport') === 'true') {
+                displaySuccess('تم فك قفل لوحة الإدارة بنجاح من قبل خدمة العملاء. يرجى تسجيل الدخول لمرة واحدة.');
+                localStorage.removeItem('unlockedBySupport');
+            }
+        });
+        
+    </script>
+</body>
+</html>
